@@ -50,7 +50,9 @@ function readLockSkills() {
 }
 
 function runSkills(args, { dryRun }) {
-  const printable = ["npx", SKILLS_CLI, ...args].map((a) => (a === "*" ? "'*'" : a)).join(" ");
+  const printable = ["npx", SKILLS_CLI, ...args]
+    .map((a) => (a === "*" || a.includes(" ") ? `'${a}'` : a))
+    .join(" ");
   console.log(`\n$ ${printable}`);
   if (dryRun) return true;
   const result = spawnSync("npx", ["--yes", SKILLS_CLI, ...args], { stdio: "inherit" });
@@ -86,7 +88,12 @@ function main() {
 
   const dryRun = values["dry-run"];
   const previouslyManaged = readJson(statePath(), {}).managed ?? {};
-  const plan = planSync({ manifest, lockSkills: readLockSkills(), previouslyManaged });
+  const plan = planSync({
+    manifest,
+    home: homedir(),
+    lockSkills: readLockSkills(),
+    previouslyManaged,
+  });
   const agentArgs = ["-a", ...manifest.agents];
   const failures = [];
 
@@ -100,9 +107,15 @@ function main() {
     }
   }
 
-  for (const { repo, skills } of plan.installs) {
-    if (!runSkills(["add", repo, "--skill", ...skills, "-g", ...agentArgs, "-y"], { dryRun })) {
-      failures.push(`add ${repo} (${skills.join(", ")})`);
+  for (const { source, local, skills } of plan.installs) {
+    // A folder source only exists on machines that have it (e.g. Xcode's
+    // skills), so a missing folder is skipped rather than failing the sync.
+    if (local && !existsSync(source)) {
+      console.warn(`\nSkipping ${source}: folder not found.`);
+      continue;
+    }
+    if (!runSkills(["add", source, "--skill", ...skills, "-g", ...agentArgs, "-y"], { dryRun })) {
+      failures.push(`add ${source} (${skills.join(", ")})`);
     }
   }
 

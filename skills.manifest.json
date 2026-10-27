@@ -6,6 +6,26 @@
       "skills": "*"
     },
     {
+      "path": "~/Library/Developer/Xcode/CodingAssistant/codex/skills/__xcode",
+      "skills": [
+        "accessibility-dynamic-type-specialist",
+        "accessibility-sufficient-contrast-specialist",
+        "accessibility-voiceover-specialist",
+        "adopt-c-bounds-safety",
+        "app-intents-specialist",
+        "app-intents-whats-new-27",
+        "audit-xcode-security-settings",
+        "building-document-based-swiftui-applications",
+        "device-interaction",
+        "modernize-tests",
+        "swiftui-specialist",
+        "swiftui-whats-new-27",
+        "translation",
+        "translation-coordinator",
+        "uikit-app-modernization"
+      ]
+    },
+    {
       "repo": "mattpocock/skills",
       "skills": [
         "grill-me",

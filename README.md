@@ -58,6 +58,11 @@ test/                    tests for lib/plan.mjs (npm test)
 - `agents`: the `skills` CLI agent names to install into
   ([list](https://github.com/vercel-labs/skills/blob/main/docs/agents.md)).
 - `repo`: anything `npx skills add` accepts; `owner/repo` for GitHub.
+- `path` (instead of `repo`): a folder on this machine, absolute or starting
+  with `~/`. Apple's Xcode skills come from the folder Xcode keeps them in, so
+  they are never copied into this public repo. `skills update` skips folder
+  sources, so every sync re-adds them, and a missing folder (for example on a
+  machine without Xcode) is skipped with a warning.
 - `skills`: `"*"` for every skill in the repo, or a list of skill names. To see
   what a repo offers, run `npx skills add <repo> --list`.
 - A skill name can only appear once across all sources, because the CLI's lock

@@ -44,7 +44,7 @@ test("planSync installs missing skills and updates ones already from the same re
     lockSkills: { tdd: lockEntry("mattpocock/skills") },
     previouslyManaged: {},
   });
-  assert.deepEqual(plan.installs, [{ repo: "mattpocock/skills", skills: ["triage"] }]);
+  assert.deepEqual(plan.installs, [{ source: "mattpocock/skills", local: false, skills: ["triage"] }]);
   assert.deepEqual(plan.updates, ["tdd"]);
 });
 
@@ -54,7 +54,7 @@ test("planSync reinstalls a skill that is currently installed from another repo"
     lockSkills: { modernize: lockEntry("someone-else/skills") },
     previouslyManaged: {},
   });
-  assert.deepEqual(plan.installs, [{ repo: "t3dotgg/tstack", skills: ["modernize"] }]);
+  assert.deepEqual(plan.installs, [{ source: "t3dotgg/tstack", local: false, skills: ["modernize"] }]);
   assert.deepEqual(plan.updates, []);
 });
 
@@ -64,14 +64,71 @@ test("planSync always re-adds wildcard sources", () => {
     lockSkills: { "merge-main-verify": lockEntry("ralibardi/agent-skills") },
     previouslyManaged: {},
   });
-  assert.deepEqual(plan.installs, [{ repo: "ralibardi/agent-skills", skills: ["*"] }]);
+  assert.deepEqual(plan.installs, [{ source: "ralibardi/agent-skills", local: false, skills: ["*"] }]);
   assert.deepEqual(plan.updates, []);
+});
+
+const XCODE = "/Users/me/Library/Developer/Xcode/CodingAssistant/codex/skills/__xcode";
+const localEntry = (source) => ({ source, sourceType: "local" });
+
+test("validateManifest accepts folder sources and rejects relative or doubled ones", () => {
+  assert.deepEqual(
+    validateManifest({ agents: ["codex"], sources: [{ path: "~/xcode", skills: ["translation"] }] }),
+    [],
+  );
+  const errors = validateManifest({
+    agents: ["codex"],
+    sources: [
+      { path: "relative/dir", skills: ["a"] },
+      { repo: "a/b", path: "/abs", skills: ["b"] },
+    ],
+  });
+  assert.equal(errors.length, 2);
+});
+
+test("planSync expands ~ and always re-adds folder sources instead of updating", () => {
+  const plan = planSync({
+    manifest: {
+      agents: ["codex"],
+      sources: [
+        {
+          path: "~/Library/Developer/Xcode/CodingAssistant/codex/skills/__xcode",
+          skills: ["swiftui-specialist", "translation"],
+        },
+      ],
+    },
+    home: "/Users/me",
+    lockSkills: { "swiftui-specialist": localEntry(XCODE) },
+    previouslyManaged: {},
+  });
+  assert.deepEqual(plan.installs, [
+    { source: XCODE, local: true, skills: ["swiftui-specialist", "translation"] },
+  ]);
+  assert.deepEqual(plan.updates, []);
+});
+
+test("folder sources are managed and removed by path like repos", () => {
+  const lockSkills = { translation: localEntry(XCODE), "swiftui-specialist": localEntry(XCODE) };
+  const managed = nextManagedSet({
+    desired: new Map([["translation", XCODE]]),
+    wildcardSources: new Set(),
+    lockSkills,
+    previouslyManaged: { "swiftui-specialist": XCODE },
+  });
+  assert.deepEqual(managed, { translation: XCODE, "swiftui-specialist": XCODE });
+
+  const plan = planSync({
+    manifest: { agents: ["codex"], sources: [{ path: XCODE, skills: ["translation"] }] },
+    lockSkills,
+    previouslyManaged: managed,
+  });
+  assert.deepEqual(plan.removals, ["swiftui-specialist"]);
 });
 
 test("nextManagedSet adopts listed skills and leaves hand-installed ones alone", () => {
   const managed = nextManagedSet({
     desired: new Map([["tdd", "mattpocock/skills"]]),
-    wildcardRepos: new Set(["ralibardi/agent-skills"]),
+    wildcardSources: new Set(["ralibardi/agent-skills"]),
     lockSkills: {
       tdd: lockEntry("mattpocock/skills"),
       "merge-main-verify": lockEntry("ralibardi/agent-skills"),
@@ -88,7 +145,7 @@ test("nextManagedSet adopts listed skills and leaves hand-installed ones alone",
 test("nextManagedSet keeps a dropped skill managed while it is still installed", () => {
   const managed = nextManagedSet({
     desired: new Map(),
-    wildcardRepos: new Set(),
+    wildcardSources: new Set(),
     lockSkills: { triage: lockEntry("mattpocock/skills") },
     previouslyManaged: { triage: "mattpocock/skills" },
   });
@@ -97,7 +154,7 @@ test("nextManagedSet keeps a dropped skill managed while it is still installed",
 
 const removalInput = (overrides) => ({
   desired: new Map(),
-  wildcardRepos: new Set(),
+  wildcardSources: new Set(),
   lockSkills: {},
   previouslyManaged: {},
   ...overrides,
@@ -153,7 +210,7 @@ test("planRemovals keeps skills still covered by a wildcard source or moved to a
   const removals = planRemovals(
     removalInput({
       desired: new Map([["tdd", "someone-else/skills"]]),
-      wildcardRepos: new Set(["ralibardi/agent-skills"]),
+      wildcardSources: new Set(["ralibardi/agent-skills"]),
       lockSkills: {
         tdd: lockEntry("mattpocock/skills"),
         "merge-main-verify": lockEntry("ralibardi/agent-skills"),
