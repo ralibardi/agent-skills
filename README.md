@@ -10,8 +10,12 @@ them straight from that repo.
 ## Use it
 
 ```bash
-npx github:ralibardi/agent-skills
+npx --allow-git=root github:ralibardi/agent-skills
 ```
+
+npm 12 refuses to fetch packages from git by default (`EALLOWGIT`).
+`--allow-git=root` lifts that for this one command only; this package has no
+dependencies, so nothing else is fetched from git.
 
 Options:
 
