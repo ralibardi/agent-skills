@@ -4,6 +4,11 @@
   "private": true,
   "description": "Ronny's agent skills, plus a manifest that references skills from other repos.",
   "type": "module",
+  "files": [
+    "bin/",
+    "lib/",
+    "skills.manifest.json"
+  ],
   "bin": {
     "agent-skills": "bin/sync.mjs"
   },
