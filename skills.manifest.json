@@ -50,6 +50,12 @@
         "sol-loop",
         "takeover"
       ]
+    },
+    {
+      "repo": "benjitaylor/skills",
+      "skills": [
+        "stageshow"
+      ]
     }
   ]
 }
