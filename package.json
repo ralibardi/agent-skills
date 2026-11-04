@@ -10,7 +10,8 @@
     "skills.manifest.json"
   ],
   "bin": {
-    "agent-skills": "bin/sync.mjs"
+    "agent-skills": "bin/sync.mjs",
+    "agent-skills-audit": "bin/audit.mjs"
   },
   "engines": {
     "node": ">=22.20"
@@ -18,6 +19,7 @@
   "scripts": {
     "test": "node --test",
     "sync": "node bin/sync.mjs",
-    "sync:dry": "node bin/sync.mjs --dry-run"
+    "sync:dry": "node bin/sync.mjs --dry-run",
+    "audit": "node bin/audit.mjs"
   }
 }
