@@ -1,6 +1,13 @@
 ---
 name: skills-manifest-audit
-description: Audits the agent skills installed by the `skills` CLI against skills.manifest.json in ralibardi/agent-skills and reports drift: skills installed by hand from sources the manifest does not name, skills missing or installed from the wrong source, stale sync state, and project-level skill copies that shadow a global install. Use when the user asks to audit, check or reconcile their skills, asks why a skill is installed, or before editing the manifest.
+description: >-
+  Audits the agent skills installed by the `skills` CLI against
+  skills.manifest.json in ralibardi/agent-skills and reports drift: skills
+  installed by hand from sources the manifest does not name, skills missing or
+  installed from the wrong source, stale sync state, and project-level skill
+  copies that shadow a global install. Use when the user asks to audit, check
+  or reconcile their skills, asks why a skill is installed, or before editing
+  the manifest.
 disable-model-invocation: true
 ---
 
