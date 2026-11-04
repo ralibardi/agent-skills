@@ -3,11 +3,12 @@
 // running the `skills` CLI (https://github.com/vercel-labs/skills).
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { readJson, readLockSkills, readPreviouslyManaged, statePath } from "../lib/files.mjs";
 import { nextManagedSet, planSync, validateManifest } from "../lib/plan.mjs";
 
 const SKILLS_CLI = process.env.SKILLS_CLI ?? "skills@^1.7.4";
@@ -23,31 +24,6 @@ Options:
   --no-update        Skip updating skills that are already installed
   -h, --help         Show this help
 `;
-
-// Same lock location rule as the skills CLI.
-function lockPath() {
-  const stateHome = process.env.XDG_STATE_HOME;
-  return stateHome
-    ? join(stateHome, "skills", ".skill-lock.json")
-    : join(homedir(), ".agents", ".skill-lock.json");
-}
-
-function statePath() {
-  return join(dirname(lockPath()), ".agent-skills-state.json");
-}
-
-function readJson(path, fallback) {
-  if (!existsSync(path)) return fallback;
-  try {
-    return JSON.parse(readFileSync(path, "utf8"));
-  } catch (error) {
-    throw new Error(`Could not parse ${path}: ${error.message}`);
-  }
-}
-
-function readLockSkills() {
-  return readJson(lockPath(), {}).skills ?? {};
-}
 
 function runSkills(args, { dryRun }) {
   const printable = ["npx", SKILLS_CLI, ...args]
@@ -87,7 +63,7 @@ function main() {
   }
 
   const dryRun = values["dry-run"];
-  const previouslyManaged = readJson(statePath(), {}).managed ?? {};
+  const previouslyManaged = readPreviouslyManaged();
   const plan = planSync({
     manifest,
     home: homedir(),

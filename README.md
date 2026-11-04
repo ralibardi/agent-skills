@@ -27,6 +27,9 @@ Options:
 
 From a local checkout: `npm run sync` or `npm run sync:dry`.
 
+To see where the installed skills have drifted from the manifest without
+changing anything, run the audit (see [Auditing](#auditing)).
+
 My skills on their own also install with the plain CLI:
 
 ```bash
@@ -38,9 +41,12 @@ npx skills add ralibardi/agent-skills -g
 ```text
 skills/                  my skills, one folder per skill (SKILL.md + files)
 skills.manifest.json     which skills to install, and from which repos
-bin/sync.mjs             the command above
+bin/sync.mjs             the sync command above
+bin/audit.mjs            the audit command (npm run audit)
 lib/plan.mjs             decides what to install, update and remove
-test/                    tests for lib/plan.mjs (npm test)
+lib/audit.mjs            compares the lock file with the manifest
+lib/files.mjs            where the lock file and sync state live
+test/                    tests for lib/ (npm test)
 ```
 
 ## The manifest
@@ -96,6 +102,38 @@ source. It keeps:
 - skills from a listed repo that were never listed.
 
 Removal takes the skill out of every agent, not only the ones in `agents`.
+
+## Auditing
+
+`npx skills add` run by hand installs a skill the sync knows nothing about, so
+it is never updated or removed. The audit finds that drift and changes nothing:
+
+```bash
+npm run audit -- --project <repo-path>
+```
+
+Or without a checkout:
+
+```bash
+npx --allow-git=root -p github:ralibardi/agent-skills agent-skills-audit --project <repo-path>
+```
+
+It reports, in this order: skills installed from sources the manifest does not
+name; skills installed from a listed source but not on its list; listed skills
+that are not installed; skills installed from a different source than the
+manifest wants; stale sync state; and, for each `--project` folder, skills in
+that repo's `.claude/skills` or `.agents/skills` that shadow a global install.
+
+| Option | What it does |
+|---|---|
+| `--project <path>` | Also check that repo for project-level copies (repeatable) |
+| `--propose` | Print a manifest that adopts every unlisted source, naming its installed skills |
+| `--json` | Machine-readable report |
+| `--manifest <path>` | Audit against another manifest |
+
+Exit code 0 means in sync, 1 means drift, 2 means the audit could not run.
+The `skills-manifest-audit` skill in `skills/` walks an agent through running
+it and reading the report.
 
 ## Adding one of my own skills
 
