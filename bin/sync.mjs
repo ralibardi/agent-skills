@@ -5,7 +5,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { readJson, readLockSkills, readPreviouslyManaged, statePath } from "../lib/files.mjs";
@@ -25,13 +25,23 @@ Options:
   -h, --help         Show this help
 `;
 
+// On Windows npx is an npx.cmd shim, which spawn can't run without a shell,
+// and cmd.exe would eat the ^ in SKILLS_CLI. So run npm's npx script with
+// this node instead (it ships next to node.exe).
+function npxCommand() {
+  if (process.platform !== "win32") return ["npx", []];
+  const npxCli = join(dirname(process.execPath), "node_modules", "npm", "bin", "npx-cli.js");
+  return [process.execPath, [npxCli]];
+}
+
 function runSkills(args, { dryRun }) {
   const printable = ["npx", SKILLS_CLI, ...args]
     .map((a) => (a === "*" || a.includes(" ") ? `'${a}'` : a))
     .join(" ");
   console.log(`\n$ ${printable}`);
   if (dryRun) return true;
-  const result = spawnSync("npx", ["--yes", SKILLS_CLI, ...args], { stdio: "inherit" });
+  const [command, prefix] = npxCommand();
+  const result = spawnSync(command, [...prefix, "--yes", SKILLS_CLI, ...args], { stdio: "inherit" });
   if (result.error) console.error(`  Could not start npx: ${result.error.message}`);
   return result.status === 0;
 }
